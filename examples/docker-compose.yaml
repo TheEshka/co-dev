@@ -1,0 +1,13 @@
+version: "3"
+
+services: 
+  golang:
+    build: 
+      context: ../
+      dockerfile: ./examples/golang/Dockerfile
+    ports: 
+      - "8080:8080"
+  mongo:
+    build: ./mongo
+    ports:
+      - "27017:27017"
