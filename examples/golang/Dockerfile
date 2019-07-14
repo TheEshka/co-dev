@@ -5,8 +5,7 @@ WORKDIR /build
 RUN apk add git && \
     go mod download
 COPY . /build/
-RUN ls -alR && \
-    go build -o main
+RUN go build -o main
 
 # final stage
 FROM alpine

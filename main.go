@@ -10,6 +10,7 @@ import (
 	"github.com/misgorod/co-dev/db"
 	"github.com/misgorod/co-dev/middlewares"
 	"github.com/misgorod/co-dev/post"
+	"github.com/misgorod/co-dev/users"
 )
 
 func main() {
@@ -23,11 +24,19 @@ func main() {
 	postHandler := post.PostHandler{
 		Client: client,
 	}
+	usersHandler := users.UsersHandler{
+		Client: client,
+	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
+
+		r.Route("/users", func(r chi.Router) {
+			r.Use(middlewares.Authenticate)
+			r.Get("/{id}", usersHandler.Get)
+		})
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Get("/", postHandler.GetAll)

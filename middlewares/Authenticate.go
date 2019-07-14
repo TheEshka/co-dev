@@ -8,7 +8,6 @@ import (
 
 	"github.com/misgorod/co-dev/auth"
 	"github.com/misgorod/co-dev/common"
-	"github.com/misgorod/co-dev/tokens"
 )
 
 func Authenticate(next http.Handler) http.Handler {
@@ -19,18 +18,18 @@ func Authenticate(next http.Handler) http.Handler {
 			return
 		}
 		tokenString = tokenString[7:]
-		token, err := jwt.ParseWithClaims(tokenString, &tokens.Claims{}, tokens.KeyFunc)
+		token, err := jwt.ParseWithClaims(tokenString, &auth.Claims{}, auth.KeyFunc)
 		if err != nil {
 			common.RespondError(w, http.StatusUnauthorized, auth.ErrWrongToken.Error())
 			return
 		}
 
-		claims, ok := token.Claims.(*tokens.Claims)
+		claims, ok := token.Claims.(*auth.Claims)
 		if !ok || !token.Valid {
 			common.RespondError(w, http.StatusUnauthorized, auth.ErrWrongToken.Error())
 			return
 		}
-		ctx := tokens.SetUserId(r.Context(), claims.UserId)
+		ctx := auth.SetUserId(r.Context(), claims.UserId)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

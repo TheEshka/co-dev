@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/misgorod/co-dev/common"
-	"github.com/misgorod/co-dev/tokens"
+	"github.com/misgorod/co-dev/users"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -18,17 +18,17 @@ type AuthHandler struct {
 }
 
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var user *User
+	var user users.User
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
 
-	user, err := createUser(r.Context(), a.Client, user.Email, user.Password)
+	err := users.CreateUser(r.Context(), a.Client, &user)
 	if err != nil {
 		switch err {
-		case ErrUserExists:
+		case users.ErrUserExists:
 			common.RespondError(w, http.StatusBadRequest, "User with this email already exists")
 			break
 		default:
@@ -37,25 +37,25 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := tokens.CreateToken(user.ID.String())
+	token, err := CreateToken(user.ID.String())
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		return
 	}
 
 	w.Header().Add("Authorization", "Bearer "+token)
-	common.RespondJSON(w, http.StatusCreated, user)
+	common.RespondJSON(w, http.StatusCreated, &user)
 }
 
 func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var user *User
+	var user users.User
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
 
-	user, err := validateUser(r.Context(), a.Client, user.Email, user.Password)
+	err := users.ValidateUser(r.Context(), a.Client, &user)
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
@@ -70,12 +70,12 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := tokens.CreateToken(user.ID.Hex())
+	token, err := CreateToken(user.ID.Hex())
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		return
 	}
 
 	w.Header().Add("Authorization", "Bearer "+token)
-	common.RespondJSON(w, http.StatusOK, user)
+	common.RespondJSON(w, http.StatusOK, &user)
 }

@@ -146,10 +146,13 @@ components:
       required:
         - email
         - password
+        - name
       properties:
         email:
           type: string
           format: email
+        name:
+          type: string
         password:
           type: string
           format: password
@@ -158,12 +161,15 @@ components:
       required:
         - id
         - email
+        - name
       properties:
         id:
           type: string
         email:
           type: string
           format: email
+        name:
+          type: string
     CreatePostRequest:
       type: object
       required:

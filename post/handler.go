@@ -11,7 +11,6 @@ import (
 
 	"github.com/misgorod/co-dev/auth"
 	"github.com/misgorod/co-dev/common"
-	"github.com/misgorod/co-dev/tokens"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -32,7 +31,7 @@ func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := tokens.GetUserId(r.Context())
+	userId, ok := auth.GetUserId(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
@@ -92,7 +91,7 @@ func (p *PostHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PostHandler) MemberPost(w http.ResponseWriter, r *http.Request) {
-	userId, ok := tokens.GetUserId(r.Context())
+	userId, ok := auth.GetUserId(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
@@ -115,7 +114,7 @@ func (p *PostHandler) MemberPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PostHandler) MemberDelete(w http.ResponseWriter, r *http.Request) {
-	userId, ok := tokens.GetUserId(r.Context())
+	userId, ok := auth.GetUserId(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
