@@ -77,5 +77,5 @@ func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Authorization", "Bearer "+token)
-	common.RespondJSON(w, http.StatusCreated, user)
+	common.RespondJSON(w, http.StatusOK, user)
 }

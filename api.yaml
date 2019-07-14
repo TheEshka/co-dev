@@ -1,0 +1,224 @@
+openapi: "3.0.0"
+info:
+  title: "API"
+  version: "1.0.0"
+paths:
+  /api/register:
+    post:
+      description: Register new user
+      requestBody:
+        description: User email and password
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          headers:
+            Authorization:
+              schema:
+                $ref: '#/components/schemas/AuthorizationHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+  /api/login:
+    post:
+      description: Login existing user
+      requestBody:
+        description: User email and password
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          headers:
+            Authorization:
+              schema:
+                $ref: '#/components/schemas/AuthorizationHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+  /api/posts:
+    post:
+      description: Create new team
+      parameters:
+        - in: headers
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+      requestBody:
+        description: Title, subject and description of team
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    get:
+      description: Get list of teams
+      requestBody:
+        desctiption: Offset and limit of list of teams
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPostsRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Posts'
+  /api/posts/{id}:
+    get:
+      description: Get information about team
+      parameters:
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+  /api/posts/{id}/members:
+    post:
+      description: Add member to team
+      parameters:
+        - in: headers
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+        '409':
+          description: Author is not allowed to be a member of team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      description: Delete member of team
+      parameters:
+        - in: headers
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+
+      
+
+components:
+  schemas:
+    UserRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - subject
+        - description
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+    GetPostsRequest:
+      type: object
+      properties:
+        offset:
+          type: integer
+        limit:
+          type: integer
+    Post:
+      type: object
+      required:
+        - id 
+        - title
+        - subject
+        - description
+        - authorID
+        - createdAt
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        authorID:
+          type: string
+        createdAt:
+          type: string
+          format: time
+    Posts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Post'
+    AuthorizationHeader:
+      type: string
+      pattern: '^Bearer .+$'
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+
