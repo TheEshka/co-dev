@@ -12,15 +12,18 @@ import (
 	"github.com/misgorod/co-dev/auth"
 	"github.com/misgorod/co-dev/common"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"gopkg.in/go-playground/validator.v9"
 )
 
 type PostHandler struct {
-	Client *mongo.Client
+	Client   *mongo.Client
+	Validate *validator.Validate
 }
 
 type pageOptions struct {
-	Offset int `json:"offset"`
-	Limit  int `json:"limit"`
+	Offset int `json:"offset" validate:"gte=0"`
+	Limit  int `json:"limit" validate:"gte=0"`
 }
 
 func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +33,16 @@ func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
-
+	if err := p.Validate.Struct(post); err != nil {
+		switch err.(type) {
+		case validator.ValidationErrors:
+			common.RespondError(w, http.StatusBadRequest, "Invalid json")
+			break
+		default:
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal validator: %s", err.Error()))
+		}
+		return
+	}
 	userId, ok := auth.GetUserId(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
@@ -56,7 +68,16 @@ func (p *PostHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
-
+	if err := p.Validate.Struct(pageOptions); err != nil {
+		switch err.(type) {
+		case validator.ValidationErrors:
+			common.RespondError(w, http.StatusBadRequest, "Invalid json")
+			break
+		default:
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		}
+		return
+	}
 	if pageOptions.Limit == 0 || pageOptions.Limit > 50 {
 		pageOptions.Limit = 50
 	}

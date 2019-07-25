@@ -13,11 +13,11 @@ import (
 )
 
 type Post struct {
-	ID          *primitive.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
-	Title       string                `json:"title" bson:"title"`
-	Subject     string                `json:"subject" bson:"subject"`
-	Description string                `json:"description" bson:"description"`
-	Author      *primitive.ObjectID   `json:"authorID,omitempty" bson:"authorID,omitempty"`
+	ID          *primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
+	Title       string                `json:"title" bson:"title" validate:"required,gte=5"`
+	Subject     string                `json:"subject" bson:"subject" validate:"required,gte=5"`
+	Description string                `json:"description" bson:"description" validate:"required,gte=5"`
+	Author      *primitive.ObjectID   `json:"authorID" bson:"authorID"`
 	CreatedAt   time.Time             `json:"createdAt" bson:"createdAt"`
 	Views       int                   `json:"views,omitempty" bson:"views,omitempty"`
 	Members     []*primitive.ObjectID `json:"membersID,omitempty" bson:"membersID,omitempty"`

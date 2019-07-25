@@ -11,21 +11,32 @@ import (
 	"github.com/misgorod/co-dev/users"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 type AuthHandler struct {
-	Client *mongo.Client
+	Client   *mongo.Client
+	Validate *validator.Validate
 }
 
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var user users.User
+	var user regUser
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
-
-	err := users.CreateUser(r.Context(), a.Client, &user)
+	if err := a.Validate.Struct(user); err != nil {
+		switch err.(type) {
+		case validator.ValidationErrors:
+			common.RespondError(w, http.StatusBadRequest, "Invalid json")
+			break
+		default:
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		}
+		return
+	}
+	err := createUser(r.Context(), a.Client, &user)
 	if err != nil {
 		switch err {
 		case users.ErrUserExists:
@@ -48,14 +59,23 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var user users.User
+	var user loginUser
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
 		return
 	}
-
-	err := users.ValidateUser(r.Context(), a.Client, &user)
+	if err := a.Validate.Struct(user); err != nil {
+		switch err.(type) {
+		case validator.ValidationErrors:
+			common.RespondError(w, http.StatusBadRequest, "Invalid json")
+			break
+		default:
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		}
+		return
+	}
+	err := validateUser(r.Context(), a.Client, &user)
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:

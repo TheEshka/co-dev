@@ -11,6 +11,7 @@ import (
 	"github.com/misgorod/co-dev/middlewares"
 	"github.com/misgorod/co-dev/post"
 	"github.com/misgorod/co-dev/users"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 func main() {
@@ -19,10 +20,12 @@ func main() {
 		panic(err)
 	}
 	authHandler := auth.AuthHandler{
-		Client: client,
+		Client:   client,
+		Validate: validator.New(),
 	}
 	postHandler := post.PostHandler{
-		Client: client,
+		Client:   client,
+		Validate: validator.New(),
 	}
 	usersHandler := users.UsersHandler{
 		Client: client,

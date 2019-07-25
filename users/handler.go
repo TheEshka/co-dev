@@ -25,11 +25,10 @@ func (a *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case ErrUserNotExists:
 			common.RespondError(w, http.StatusBadRequest, err.Error())
-			return
 		default:
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
-			return
 		}
+		return
 	}
 
 	common.RespondJSON(w, http.StatusOK, user)
