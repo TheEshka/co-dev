@@ -43,6 +43,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginUserRequest'
+  /api/users/{id}:
+    get:
+      description: Get user info
+      parameters:
+        - in: path
+          name: id
+          description: User's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
   /api/posts:
     post:
       description: Create new team
