@@ -12,7 +12,7 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/RegUserRequest'
       responses:
         '201':
           headers:
@@ -22,7 +22,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: '#/components/schemas/RegUserRequest'
   /api/login:
     post:
       description: Login existing user
@@ -32,7 +32,7 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/LoginUserRequest'
       responses:
         '200':
           headers:
@@ -42,7 +42,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: '#/components/schemas/LoginUserRequest'
   /api/posts:
     post:
       description: Create new team
@@ -94,7 +94,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Post'
+                $ref: '#/components/schemas/PostResponse'
   /api/posts/{id}/members:
     post:
       description: Add member to team
@@ -141,7 +141,7 @@ paths:
 
 components:
   schemas:
-    UserRequest:
+    RegUserRequest:
       type: object
       required:
         - email
@@ -153,6 +153,18 @@ components:
           format: email
         name:
           type: string
+        password:
+          type: string
+          format: password
+    LoginUserRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
         password:
           type: string
           format: password
@@ -213,10 +225,36 @@ components:
         createdAt:
           type: string
           format: time
+    PostResponse:
+      type: object
+      required:
+        - id 
+        - title
+        - subject
+        - description
+        - authorID
+        - createdAt
+        - imageId
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        imageId:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        authorID:
+          type: string
+        createdAt:
+          type: string
+          format: time
     Posts:
       type: array
       items:
-        $ref: '#/components/schemas/Post'
+        $ref: '#/components/schemas/PostResponse'
     AuthorizationHeader:
       type: string
       pattern: '^Bearer .+$'
