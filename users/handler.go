@@ -9,11 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UsersHandler struct {
+type Handler struct {
 	Client *mongo.Client
 }
 
-func (a *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (a *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		common.RespondError(w, http.StatusBadRequest, "ID not specified")

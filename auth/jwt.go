@@ -8,20 +8,20 @@ import (
 )
 
 type Claims struct {
-	UserId string `json:"user-id"`
+	UserID string `json:"user-id"`
 	jwt.StandardClaims
 }
 
 type ctxKey int
 
-const userIdKey = ctxKey(1)
+const userIDKey = ctxKey(1)
 
-func SetUserId(ctx context.Context, userId string) context.Context {
-	return context.WithValue(ctx, userIdKey, userId)
+func SetUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
 }
 
-func GetUserId(ctx context.Context) (string, bool) {
-	val, ok := ctx.Value(userIdKey).(string)
+func GetUserID(ctx context.Context) (string, bool) {
+	val, ok := ctx.Value(userIDKey).(string)
 	return val, ok
 }
 
@@ -31,9 +31,9 @@ func KeyFunc(*jwt.Token) (interface{}, error) {
 	return key, nil
 }
 
-func CreateToken(userId string) (string, error) {
+func CreateToken(userID string) (string, error) {
 	claims := Claims{
-		userId,
+		userID,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour).Unix(),
 		},

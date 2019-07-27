@@ -29,7 +29,7 @@ func Authenticate(next http.Handler) http.Handler {
 			common.RespondError(w, http.StatusUnauthorized, auth.ErrWrongToken.Error())
 			return
 		}
-		ctx := auth.SetUserId(r.Context(), claims.UserId)
+		ctx := auth.SetUserID(r.Context(), claims.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
