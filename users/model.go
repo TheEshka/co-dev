@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,11 +17,20 @@ type User struct {
 
 func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error) {
 	coll := client.Database("codev").Collection("users")
-	objId, err := primitive.ObjectIDFromHex(id)
+	objID, err := primitive.ObjectIDFromHex(id)
+	fmt.Println(err)
 	if err != nil {
 		return nil, ErrUserNotExists
 	}
-	singleRes := coll.FindOne(ctx, bson.D{{"_id", objId}})
+	singleRes := coll.FindOne(ctx, bson.D{
+		{
+			Key:   "_id",
+			Value: objID,
+		},
+	})
+	fmt.Println(singleRes)
+	fmt.Println(singleRes.Err())
+
 	if singleRes.Err() != nil {
 		if singleRes.Err() == mongo.ErrNoDocuments {
 			return nil, ErrUserNotExists
@@ -29,6 +39,7 @@ func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error
 	}
 	var user User
 	err = singleRes.Decode(&user)
+	fmt.Println(err)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, ErrUserNotExists

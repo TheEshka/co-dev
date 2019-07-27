@@ -14,12 +14,12 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-type AuthHandler struct {
+type Handler struct {
 	Client   *mongo.Client
 	Validate *validator.Validate
 }
 
-func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var user regUser
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -47,8 +47,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	token, err := CreateToken(user.ID.String())
+	token, err := CreateToken(user.ID.Hex())
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		return
@@ -58,7 +57,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusCreated, &user)
 }
 
-func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var user loginUser
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {

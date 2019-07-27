@@ -16,7 +16,7 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-type PostHandler struct {
+type Handler struct {
 	Client   *mongo.Client
 	Validate *validator.Validate
 }
@@ -26,7 +26,7 @@ type pageOptions struct {
 	Limit  int `json:"limit" validate:"gte=0"`
 }
 
-func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
+func (p *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	var post *Post
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
@@ -43,12 +43,12 @@ func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	userId, ok := auth.GetUserId(r.Context())
+	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
-
-	post, err := CreatePost(r.Context(), p.Client, userId, post)
+	fmt.Println(userID)
+	post, err := CreatePost(r.Context(), p.Client, userID, post)
 	if err != nil {
 		switch err {
 		case primitive.ErrInvalidHex:
@@ -62,7 +62,7 @@ func (p *PostHandler) Post(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusCreated, post)
 }
 
-func (p *PostHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+func (p *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	var pageOptions *pageOptions
 	if err := json.NewDecoder(r.Body).Decode(&pageOptions); err != nil {
 		common.RespondError(w, http.StatusBadRequest, "Failed to decode request")
@@ -91,7 +91,7 @@ func (p *PostHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusOK, posts)
 }
 
-func (p *PostHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (p *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		common.RespondError(w, http.StatusBadRequest, "ID not specified")
@@ -111,13 +111,16 @@ func (p *PostHandler) Get(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusOK, post)
 }
 
-func (p *PostHandler) MemberPost(w http.ResponseWriter, r *http.Request) {
-	userId, ok := auth.GetUserId(r.Context())
+func (p *Handler) MemberPost(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
-	postId := chi.URLParam(r, "id")
-	err := AddMember(r.Context(), p.Client, postId, userId)
+	postID := chi.URLParam(r, "id")
+	if postID == "" {
+		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+	}
+	err := AddMember(r.Context(), p.Client, postID, userID)
 	if err != nil {
 		switch err {
 		case auth.ErrWrongToken:
@@ -134,13 +137,16 @@ func (p *PostHandler) MemberPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *PostHandler) MemberDelete(w http.ResponseWriter, r *http.Request) {
-	userId, ok := auth.GetUserId(r.Context())
+func (p *Handler) MemberDelete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
-	postId := chi.URLParam(r, "id")
-	err := DeleteMember(r.Context(), p.Client, postId, userId)
+	postID := chi.URLParam(r, "id")
+	if postID == "" {
+		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+	}
+	err := DeleteMember(r.Context(), p.Client, postID, userID)
 	if err != nil {
 		switch err {
 		case auth.ErrWrongToken:
@@ -153,4 +159,38 @@ func (p *PostHandler) MemberDelete(w http.ResponseWriter, r *http.Request) {
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		}
 	}
+}
+
+func (p *Handler) PostImage(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
+		return
+	}
+	postID := chi.URLParam(r, "id")
+	if postID == "" {
+		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+		return
+	}
+	post, err := GetPost(r.Context(), p.Client, postID)
+	if err != nil {
+		switch err {
+		case ErrPostNotFound:
+			common.RespondError(w, http.StatusNotFound, err.Error())
+		default:
+			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		}
+		return
+	}
+	if post.Author.ID.Hex() != userID {
+		common.RespondError(w, http.StatusForbidden, ErrNotAnAuthor.Error())
+		return
+	}
+	r.ParseMultipartForm(16 << 20)
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		common.RespondError(w, http.StatusBadRequest, ErrUploadFile.Error())
+	}
+	defer file.Close()
+	//TODO
 }

@@ -19,15 +19,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	authHandler := auth.AuthHandler{
+	authHandler := auth.Handler{
 		Client:   client,
 		Validate: validator.New(),
 	}
-	postHandler := post.PostHandler{
+	postHandler := post.Handler{
 		Client:   client,
 		Validate: validator.New(),
 	}
-	usersHandler := users.UsersHandler{
+	usersHandler := users.Handler{
 		Client: client,
 	}
 	r := chi.NewRouter()
