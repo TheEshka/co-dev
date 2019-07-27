@@ -11,17 +11,17 @@ import (
 )
 
 type regUser struct {
-	ID       *primitive.ObjectID `json:"id" bson:"_id,omitempty" validate:"-"`
-	Name     string              `json:"name" bson:"name" validate:"required"`
-	Email    string              `json:"email" bson:"email" validate:"required,email"`
-	Password string              `json:"password,omitempty" bson:"password" validate:"required"`
+	ID       primitive.ObjectID `json:"id" bson:"_id,omitempty" validate:"-"`
+	Name     string             `json:"name" bson:"name" validate:"required"`
+	Email    string             `json:"email" bson:"email" validate:"required,email"`
+	Password string             `json:"password,omitempty" bson:"password" validate:"required"`
 }
 
 type loginUser struct {
-	ID       *primitive.ObjectID `json:"id" bson:"_id" validate:"-"`
-	Name     string              `json:"name" bson:"name"`
-	Email    string              `json:"email" bson:"email" validate:"required,email"`
-	Password string              `json:"password,omitempty" bson:"password" validate:"required"`
+	ID       primitive.ObjectID `json:"id" bson:"_id" validate:"-"`
+	Name     string             `json:"name" bson:"name"`
+	Email    string             `json:"email" bson:"email" validate:"required,email"`
+	Password string             `json:"password,omitempty" bson:"password" validate:"required"`
 }
 
 func createUser(ctx context.Context, client *mongo.Client, user *regUser) error {
@@ -49,7 +49,7 @@ func createUser(ctx context.Context, client *mongo.Client, user *regUser) error 
 	if !ok {
 		return ErrAssertID
 	}
-	user.ID = &id
+	user.ID = id
 	user.Password = ""
 
 	return nil

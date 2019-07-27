@@ -3,6 +3,7 @@ package post
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 
 	"github.com/misgorod/co-dev/auth"
@@ -10,16 +11,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Post struct {
-	ID             *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	ID             primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
 	Title          string              `json:"title" bson:"title" validate:"required,gte=5"`
 	Subject        string              `json:"subject" bson:"subject" validate:"required,gte=5"`
 	Description    string              `json:"description" bson:"description" validate:"required,gte=5"`
 	Author         *users.User         `json:"author" bson:"author"`
-	ImageID        *primitive.ObjectID `json:"image" bson:"image"`
+	ImageID        *primitive.ObjectID `json:"image,omitempty" bson:"image,omitempty"`
 	CreatedAt      time.Time           `json:"createdAt" bson:"createdAt"`
 	Views          int                 `json:"views,omitempty" bson:"views,omitempty"`
 	MemberRequests []*users.User       `json:"membersRequest,omitempty" bson:"membersRequest,omitempty"`
@@ -47,7 +49,7 @@ func CreatePost(ctx context.Context, client *mongo.Client, authorID string, post
 	if !ok {
 		return nil, errors.New("cannot assert id type")
 	}
-	post.ID = &id
+	post.ID = id
 
 	return post, nil
 }
@@ -180,4 +182,42 @@ func DeleteMember(ctx context.Context, client *mongo.Client, postID string, user
 	return nil
 }
 
-//func UploadImage(ctx context.Context, )
+func UploadImage(ctx context.Context, client *mongo.Client, reader io.Reader, post *Post) error {
+	db := client.Database("codev")
+	bucket, err := gridfs.NewBucket(db)
+	if err != nil {
+		return err
+	}
+	fileID, err := bucket.UploadFromStream("image", reader)
+	if err != nil {
+		return err
+	}
+	col := db.Collection("posts")
+	filter := bson.D{{"_id", post.ID}}
+	update := bson.D{{"$set", bson.D{
+		{"image", fileID},
+	}}}
+	_, err = col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	post.ImageID = &fileID
+	return nil
+}
+
+func DownloadImage(ctx context.Context, client *mongo.Client, id string, writer io.Writer) error {
+	db := client.Database("codev")
+	bucket, err := gridfs.NewBucket(db)
+	if err != nil {
+		return err
+	}
+	obj, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	_, err = bucket.DownloadToStream(obj, writer)
+	if err != nil {
+		return err
+	}
+	return nil
+}

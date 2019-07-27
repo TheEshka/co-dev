@@ -10,9 +10,9 @@ import (
 )
 
 type User struct {
-	ID    *primitive.ObjectID `json:"id" bson:"_id"`
-	Name  string              `json:"name,omitempty" bson:"name,omitempty"`
-	Email string              `json:"email" bson:"email"`
+	ID    primitive.ObjectID `json:"id" bson:"_id"`
+	Name  string             `json:"name,omitempty" bson:"name,omitempty"`
+	Email string             `json:"email" bson:"email"`
 }
 
 func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error) {

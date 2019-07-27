@@ -47,7 +47,6 @@ func (p *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
 	}
-	fmt.Println(userID)
 	post, err := CreatePost(r.Context(), p.Client, userID, post)
 	if err != nil {
 		switch err {
@@ -192,5 +191,17 @@ func (p *Handler) PostImage(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, http.StatusBadRequest, ErrUploadFile.Error())
 	}
 	defer file.Close()
-	//TODO
+	err = UploadImage(r.Context(), p.Client, file, post)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		return
+	}
+}
+
+func (p *Handler) GetImage(w http.ResponseWriter, r *http.Request) {
+	imageID := chi.URLParam(r, "id")
+	err := DownloadImage(r.Context(), p.Client, imageID, w)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+	}
 }

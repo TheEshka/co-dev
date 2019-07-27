@@ -54,8 +54,14 @@ func main() {
 					r.Post("/", postHandler.MemberPost)
 					r.Delete("/", postHandler.MemberDelete)
 				})
+				r.Route("/image", func(r chi.Router) {
+					r.Use(middlewares.Authenticate)
+					r.Post("/", postHandler.PostImage)
+				})
 			})
 		})
+
+		r.Get("/image/{id}", postHandler.GetImage)
 	})
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
