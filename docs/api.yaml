@@ -113,7 +113,7 @@ paths:
                 $ref: '#/components/schemas/PostResponse'
   /api/posts/{id}/members:
     post:
-      description: Add member to team
+      description: Add self to member request
       parameters:
         - in: headers
           name: Authorization
@@ -136,7 +136,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      description: Delete member of team
+      description: Delete self from team
       parameters:
         - in: headers
           name: Authorization
@@ -146,6 +146,53 @@ paths:
         - in: path
           name: id
           description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+  /api/posts/{postId}/member/{memberId}:
+    put:
+      description: Approve user with memberId to be a member of team with postId
+      parameters:
+        - in: headers
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+        - in: path
+          name: postId
+          description: Team's id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: memberId
+          description: User's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+    delete:
+      description: Delete user with memberId from team with postId by author
+      parameters:
+        - in: headers
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+        - in: path
+          name: postId
+          description: Team's id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: memberId
+          description: User's id
           required: true
           schema:
             type: string

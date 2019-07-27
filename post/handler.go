@@ -11,6 +11,7 @@ import (
 
 	"github.com/misgorod/co-dev/auth"
 	"github.com/misgorod/co-dev/common"
+	"github.com/misgorod/co-dev/users"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"gopkg.in/go-playground/validator.v9"
@@ -110,14 +111,16 @@ func (p *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	common.RespondJSON(w, http.StatusOK, post)
 }
 
-func (p *Handler) MemberPost(w http.ResponseWriter, r *http.Request) {
+func (p *Handler) MembersPost(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
+		return
 	}
 	postID := chi.URLParam(r, "id")
 	if postID == "" {
 		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+		return
 	}
 	err := AddMember(r.Context(), p.Client, postID, userID)
 	if err != nil {
@@ -133,19 +136,68 @@ func (p *Handler) MemberPost(w http.ResponseWriter, r *http.Request) {
 		default:
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		}
+		return
 	}
 }
 
-func (p *Handler) MemberDelete(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.GetUserID(r.Context())
+func (p *Handler) MemberPut(w http.ResponseWriter, r *http.Request) {
+	authorID, ok := auth.GetUserID(r.Context())
 	if !ok {
 		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
+		return
 	}
 	postID := chi.URLParam(r, "id")
 	if postID == "" {
 		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+		return
 	}
-	err := DeleteMember(r.Context(), p.Client, postID, userID)
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		common.RespondError(w, http.StatusBadRequest, users.ErrUserNotExists.Error())
+		return
+	}
+	err := ApproveMember(r.Context(), p.Client, postID, authorID, memberID)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		return
+	}
+}
+
+func (p *Handler) MemberDelete(w http.ResponseWriter, r *http.Request) {
+	authorID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
+		return
+	}
+	postID := chi.URLParam(r, "id")
+	if postID == "" {
+		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+		return
+	}
+	memberID := chi.URLParam(r, "memberId")
+	if memberID == "" {
+		common.RespondError(w, http.StatusBadRequest, users.ErrUserNotExists.Error())
+		return
+	}
+	err := DeleteMember(r.Context(), p.Client, postID, authorID, memberID)
+	if err != nil {
+		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		return
+	}
+}
+
+func (p *Handler) MembersDelete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserID(r.Context())
+	if !ok {
+		common.RespondError(w, http.StatusUnauthorized, "Token is invalid")
+		return
+	}
+	postID := chi.URLParam(r, "id")
+	if postID == "" {
+		common.RespondError(w, http.StatusBadRequest, ErrPostNotFound.Error())
+		return
+	}
+	err := DeleteMemberSelf(r.Context(), p.Client, postID, userID)
 	if err != nil {
 		switch err {
 		case auth.ErrWrongToken:
@@ -157,6 +209,7 @@ func (p *Handler) MemberDelete(w http.ResponseWriter, r *http.Request) {
 		default:
 			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
 		}
+		return
 	}
 }
 
@@ -189,6 +242,7 @@ func (p *Handler) PostImage(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		common.RespondError(w, http.StatusBadRequest, ErrUploadFile.Error())
+		return
 	}
 	defer file.Close()
 	err = UploadImage(r.Context(), p.Client, file, post)
@@ -203,5 +257,6 @@ func (p *Handler) GetImage(w http.ResponseWriter, r *http.Request) {
 	err := DownloadImage(r.Context(), p.Client, imageID, w)
 	if err != nil {
 		common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
+		return
 	}
 }

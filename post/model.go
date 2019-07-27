@@ -119,16 +119,21 @@ func AddMember(ctx context.Context, client *mongo.Client, postID string, userID 
 		return ErrMemberIsAuthor
 	}
 	postsColl := client.Database("codev").Collection("posts")
-	if post.Members == nil {
-		post.Members = make([]*users.User, 0)
+	if post.MemberRequests == nil {
+		post.MemberRequests = make([]*users.User, 0)
 	} else {
+		for _, member := range post.MemberRequests {
+			if member.ID.Hex() == userObj.ID.Hex() {
+				return ErrMemberAlreadyExists
+			}
+		}
 		for _, member := range post.Members {
 			if member.ID.Hex() == userObj.ID.Hex() {
 				return ErrMemberAlreadyExists
 			}
 		}
 	}
-	post.Members = append(post.Members, userObj)
+	post.MemberRequests = append(post.MemberRequests, userObj)
 	_, err = postsColl.ReplaceOne(ctx, bson.D{
 		{
 			Key:   "_id",
@@ -142,24 +147,96 @@ func AddMember(ctx context.Context, client *mongo.Client, postID string, userID 
 	return nil
 }
 
-func DeleteMember(ctx context.Context, client *mongo.Client, postID string, userID string) error {
+func ApproveMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
+	coll := client.Database("codev").Collection("posts")
 	post, err := GetPost(ctx, client, postID)
 	if err != nil {
 		return err
 	}
-
-	userObj, err := users.GetUser(ctx, client, userID)
-	if err != nil {
-		return auth.ErrWrongToken
+	if post.Author.ID.Hex() != authorID {
+		return ErrNotAnAuthor
 	}
+	for _, member := range post.Members {
+		if member.ID.Hex() == memberID {
+			return ErrMemberAlreadyExists
+		}
+	}
+	deleted := false
+	var memberObj *users.User
+	for i, member := range post.MemberRequests {
+		if member.ID.Hex() == memberID {
+			memberObj = post.MemberRequests[i]
+			post.MemberRequests[i] = post.MemberRequests[len(post.MemberRequests)-1]
+			post.MemberRequests = post.MemberRequests[:len(post.MemberRequests)-1]
+			deleted = true
+			break
+		}
+	}
+	if !deleted {
+		return ErrMebmerNotExists
+	}
+	post.Members = append(post.Members, memberObj)
+	_, err = coll.ReplaceOne(ctx, bson.D{
+		{
+			Key:   "_id",
+			Value: post.ID,
+		},
+	}, post)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func DeleteMemberSelf(ctx context.Context, client *mongo.Client, postID string, userID string) error {
+	post, err := GetPost(ctx, client, postID)
+	if err != nil {
+		return err
+	}
 	postsColl := client.Database("codev").Collection("posts")
 	if post.Members == nil {
 		return ErrMebmerNotExists
 	}
 	deleted := false
 	for i, member := range post.Members {
-		if member.ID.Hex() == userObj.ID.Hex() {
+		if member.ID.Hex() == userID {
+			post.Members[i] = post.Members[len(post.Members)-1]
+			post.Members = post.Members[:len(post.Members)-1]
+			deleted = true
+			break
+		}
+	}
+	if !deleted {
+		return ErrMebmerNotExists
+	}
+	_, err = postsColl.ReplaceOne(ctx, bson.D{
+		{
+			Key:   "_id",
+			Value: post.ID,
+		},
+	}, post)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
+	post, err := GetPost(ctx, client, postID)
+	if err != nil {
+		return err
+	}
+	if post.Author.ID.Hex() != authorID {
+		return ErrNotAnAuthor
+	}
+	postsColl := client.Database("codev").Collection("posts")
+	if post.Members == nil {
+		return ErrMebmerNotExists
+	}
+	deleted := false
+	for i, member := range post.Members {
+		if member.ID.Hex() == memberID {
 			post.Members[i] = post.Members[len(post.Members)-1]
 			post.Members = post.Members[:len(post.Members)-1]
 			deleted = true

@@ -51,8 +51,12 @@ func main() {
 				r.Get("/", postHandler.Get)
 				r.Route("/members", func(r chi.Router) {
 					r.Use(middlewares.Authenticate)
-					r.Post("/", postHandler.MemberPost)
-					r.Delete("/", postHandler.MemberDelete)
+					r.Post("/", postHandler.MembersPost)
+					r.Delete("/", postHandler.MembersDelete)
+					r.Route("/{memberId}", func(r chi.Router) {
+						r.Put("/", postHandler.MemberPut)
+						r.Delete("/", postHandler.MemberDelete)
+					})
 				})
 				r.Route("/image", func(r chi.Router) {
 					r.Use(middlewares.Authenticate)
