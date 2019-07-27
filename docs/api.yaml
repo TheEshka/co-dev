@@ -152,8 +152,37 @@ paths:
       responses:
         '200':
           description: Ok
-
-      
+  /api/image/{id}:
+    get:
+      description: Get image by id
+      parameters:
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+  /api/posts/{id}/image:
+    post:
+      description: Upload image to team
+      parameters:
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
 
 components:
   schemas:
