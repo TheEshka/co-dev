@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	errors "github.com/misgorod/co-dev/common/errors"
 )
 
 type Claims struct {
@@ -41,7 +42,7 @@ func CreateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	sign, err := token.SignedString(key)
 	if err != nil {
-		return "", err
+		return "", errors.ErrWrongToken
 	}
 	return sign, nil
 }
@@ -49,7 +50,7 @@ func CreateToken(userID string) (string, error) {
 func ValidateToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, KeyFunc)
 	if err != nil {
-		return nil, err
+		return nil, errors.ErrWrongToken
 	}
 
 	return token, nil

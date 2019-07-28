@@ -1,11 +1,11 @@
 package users
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/misgorod/co-dev/common"
+	uerrors "github.com/misgorod/co-dev/users/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -16,18 +16,13 @@ type Handler struct {
 func (a *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		common.RespondError(w, http.StatusBadRequest, "ID not specified")
+		common.RespondError(w, uerrors.ErrNoID)
 		return
 	}
 
 	user, err := GetUser(r.Context(), a.Client, id)
 	if err != nil {
-		switch err {
-		case ErrUserNotExists:
-			common.RespondError(w, http.StatusBadRequest, err.Error())
-		default:
-			common.RespondError(w, http.StatusInternalServerError, fmt.Sprintf("Internal: %s", err.Error()))
-		}
+		common.RespondError(w, err)
 		return
 	}
 

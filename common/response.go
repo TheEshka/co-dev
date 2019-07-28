@@ -3,6 +3,8 @@ package common
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/misgorod/co-dev/common/errors"
 )
 
 func RespondJSON(w http.ResponseWriter, status int, payload interface{}) {
@@ -17,6 +19,7 @@ func RespondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Write([]byte(response))
 }
 
-func RespondError(w http.ResponseWriter, code int, message string) {
-	RespondJSON(w, code, map[string]string{"error": message})
+func RespondError(w http.ResponseWriter, err error) {
+	m, c := errors.Resolve(err)
+	RespondJSON(w, c, map[string]string{"error": m})
 }

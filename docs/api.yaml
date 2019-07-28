@@ -229,10 +229,20 @@ paths:
             type: string
       responses:
         '200':
-          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
 
 components:
   schemas:
+    FileResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
     RegUserRequest:
       type: object
       required:

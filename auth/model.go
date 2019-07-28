@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/misgorod/co-dev/common"
+	"github.com/misgorod/co-dev/common/errors"
+	aerrors "github.com/misgorod/co-dev/auth/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,7 +34,7 @@ func createUser(ctx context.Context, client *mongo.Client, user *regUser) error 
 		return err
 	}
 	if ok {
-		return ErrUserExists
+		return aerrors.ErrUserExists
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -47,7 +49,7 @@ func createUser(ctx context.Context, client *mongo.Client, user *regUser) error 
 	}
 	id, ok := insertRes.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return ErrAssertID
+		return errors.ErrAssertID
 	}
 	user.ID = id
 	user.Password = ""
@@ -66,10 +68,16 @@ func validateUser(ctx context.Context, client *mongo.Client, user *loginUser) er
 	var dbUser loginUser
 	err := findRes.Decode(&dbUser)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return aerrors.ErrWrongCreds
+		}
 		return err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password))
 	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return aerrors.ErrWrongCreds
+		}
 		return err
 	}
 	*user = dbUser
