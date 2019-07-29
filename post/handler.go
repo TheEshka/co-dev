@@ -50,7 +50,7 @@ func (p *Handler) Post(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	slimit := r.URL.Query().Get("limit)
+	slimit := r.URL.Query().Get("limit")
 	if slimit == "" {
 		slimit = "10"	
 	}
