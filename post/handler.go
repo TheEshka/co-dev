@@ -3,6 +3,7 @@ package post
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 
@@ -23,8 +24,8 @@ type Handler struct {
 }
 
 type pageOptions struct {
-	Offset int `json:"offset" validate:"gte=0"`
-	Limit  int `json:"limit" validate:"gte=0"`
+	Offset string `json:"offset" validate:"gte=0"`
+	Limit  string `json:"limit" validate:"gte=0"`
 }
 
 type file struct {
@@ -55,18 +56,26 @@ func (p *Handler) Post(w http.ResponseWriter, r *http.Request) {
 
 func (p *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	var pageOptions *pageOptions
-	if err := json.NewDecoder(r.Body).Decode(&pageOptions); err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&pageOptions); err != nil {
 		common.RespondError(w, errors.ErrDecodeRequest)
 		return
 	}
-	if err := p.Validate.Struct(pageOptions); err != nil {
+	if err = p.Validate.Struct(pageOptions); err != nil {
 		common.RespondError(w, errors.ErrValidateRequest)
 		return
 	}
-	if pageOptions.Limit == 0 || pageOptions.Limit > 50 {
-		pageOptions.Limit = 50
+	limit, err := strconv.Atoi(pageOptions.Limit)
+	if err != nil {
+		common.RespondError(w, errors.ErrDecodeRequest)	
 	}
-	posts, err := GetPosts(r.Context(), p.Client, pageOptions.Offset, pageOptions.Limit)
+	offset, err := strconv.Atoi(pageOptions.Offset)
+	if err != nil {
+		common.RespondError(w, errors.ErrDecodeRequest)		
+	}
+	if limit == 0 || limit > 50 {
+		limit = 50
+	}
+	posts, err := GetPosts(r.Context(), p.Client, offset, limit)
 	if err != nil {
 		common.RespondError(w, err)
 		return
