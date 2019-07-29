@@ -23,11 +23,6 @@ type Handler struct {
 	Validate *validator.Validate
 }
 
-type pageOptions struct {
-	Offset string `json:"offset" validate:"gte=0"`
-	Limit  string `json:"limit" validate:"gte=0"`
-}
-
 type file struct {
 	ID primitive.ObjectID `json:"id"`
 }
@@ -55,25 +50,21 @@ func (p *Handler) Post(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	var pageOptions *pageOptions
-	if err = json.NewDecoder(r.Body).Decode(&pageOptions); err != nil {
-		common.RespondError(w, errors.ErrDecodeRequest)
-		return
+	slimit := r.URL.Query().Get("limit)
+	if slimit == "" {
+		slimit = "10"	
 	}
-	if err = p.Validate.Struct(pageOptions); err != nil {
-		common.RespondError(w, errors.ErrValidateRequest)
-		return
-	}
-	limit, err := strconv.Atoi(pageOptions.Limit)
+	limit, err := strconv.Atoi(slimit)
 	if err != nil {
 		common.RespondError(w, errors.ErrDecodeRequest)	
 	}
-	offset, err := strconv.Atoi(pageOptions.Offset)
+	soffset := r.URL.Query().Get("offset")
+	if soffset == "" {
+	    soffset = "0"    
+	}
+	offset, err := strconv.Atoi(soffset)
 	if err != nil {
 		common.RespondError(w, errors.ErrDecodeRequest)		
-	}
-	if limit == 0 || limit > 50 {
-		limit = 50
 	}
 	posts, err := GetPosts(r.Context(), p.Client, offset, limit)
 	if err != nil {
