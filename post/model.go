@@ -54,7 +54,7 @@ func CreatePost(ctx context.Context, client *mongo.Client, authorID string, post
 func GetPosts(ctx context.Context, client *mongo.Client, offset, limit int) ([]*Post, error) {
 	coll := client.Database("codev").Collection("posts")
 	var posts = make([]*Post, 0)
-	cur, err := coll.Find(ctx, bson.D{}, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)))
+	cur, err := coll.Find(ctx, bson.D{}, options.Find().SetSkip(int64(offset)).SetLimit(int64(limit)).SetSort(primitive.D{{"createdAt", -1}}))
 	if err != nil {
 		return nil, err
 	}
