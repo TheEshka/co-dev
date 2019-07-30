@@ -1,13 +1,11 @@
-package post
+package models
 
 import (
 	"context"
+	errors2 "github.com/misgorod/co-dev/errors"
 	"io"
 	"time"
 
-	"github.com/misgorod/co-dev/common/errors"
-	perrors "github.com/misgorod/co-dev/post/errors"
-	"github.com/misgorod/co-dev/users"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,17 +18,17 @@ type Post struct {
 	Title          string              `json:"title" bson:"title" validate:"required,gte=5"`
 	Subject        string              `json:"subject" bson:"subject" validate:"required,gte=5"`
 	Description    string              `json:"description" bson:"description" validate:"required,gte=5"`
-	Author         *users.User         `json:"author" bson:"author"`
+	Author         *User               `json:"author" bson:"author"`
 	ImageID        *primitive.ObjectID `json:"image,omitempty" bson:"image,omitempty"`
 	CreatedAt      time.Time           `json:"createdAt" bson:"createdAt"`
 	Views          int                 `json:"views,omitempty" bson:"views,omitempty"`
-	MemberRequests []*users.User       `json:"membersRequest,omitempty" bson:"membersRequest,omitempty"`
-	Members        []*users.User       `json:"members,omitempty" bson:"members,omitempty"`
+	MemberRequests []*User             `json:"membersRequest,omitempty" bson:"membersRequest,omitempty"`
+	Members        []*User             `json:"members,omitempty" bson:"members,omitempty"`
 }
 
 func CreatePost(ctx context.Context, client *mongo.Client, authorID string, post *Post) (*Post, error) {
 	coll := client.Database("codev").Collection("posts")
-	author, err := users.GetUser(ctx, client, authorID)
+	author, err := GetUser(ctx, client, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +43,7 @@ func CreatePost(ctx context.Context, client *mongo.Client, authorID string, post
 	}
 	id, ok := insertRes.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return nil, errors.ErrAssertID
+		return nil, errors2.ErrAssertID
 	}
 	post.ID = id
 	return post, nil
@@ -77,7 +75,7 @@ func GetPost(ctx context.Context, client *mongo.Client, id string) (*Post, error
 	var post Post
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, perrors.ErrPostNotFound
+		return nil, errors2.ErrPostNotFound
 	}
 	singleRes := coll.FindOne(ctx, bson.D{
 		{
@@ -88,7 +86,7 @@ func GetPost(ctx context.Context, client *mongo.Client, id string) (*Post, error
 	err = singleRes.Decode(&post)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, perrors.ErrPostNotFound
+			return nil, errors2.ErrPostNotFound
 		}
 		return nil, err
 	}
@@ -96,30 +94,30 @@ func GetPost(ctx context.Context, client *mongo.Client, id string) (*Post, error
 	return &post, nil
 }
 
-func AddMember(ctx context.Context, client *mongo.Client, postID string, userID string) error {
+func AddPostMember(ctx context.Context, client *mongo.Client, postID string, userID string) error {
 	post, err := GetPost(ctx, client, postID)
 	if err != nil {
 		return err
 	}
-	userObj, err := users.GetUser(ctx, client, userID)
+	userObj, err := GetUser(ctx, client, userID)
 	if err != nil {
-		return errors.ErrWrongToken
+		return errors2.ErrWrongToken
 	}
 	if userObj.ID.Hex() == post.Author.ID.Hex() {
-		return perrors.ErrMemberIsAuthor
+		return errors2.ErrMemberIsAuthor
 	}
 	postsColl := client.Database("codev").Collection("posts")
 	if post.MemberRequests == nil {
-		post.MemberRequests = make([]*users.User, 0)
+		post.MemberRequests = make([]*User, 0)
 	} else {
 		for _, member := range post.MemberRequests {
 			if member.ID.Hex() == userObj.ID.Hex() {
-				return perrors.ErrMemberAlreadyExists
+				return errors2.ErrMemberAlreadyExists
 			}
 		}
 		for _, member := range post.Members {
 			if member.ID.Hex() == userObj.ID.Hex() {
-				return perrors.ErrMemberAlreadyExists
+				return errors2.ErrMemberAlreadyExists
 			}
 		}
 	}
@@ -137,22 +135,22 @@ func AddMember(ctx context.Context, client *mongo.Client, postID string, userID 
 	return nil
 }
 
-func ApproveMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
+func ApprovePostMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
 	coll := client.Database("codev").Collection("posts")
 	post, err := GetPost(ctx, client, postID)
 	if err != nil {
 		return err
 	}
 	if post.Author.ID.Hex() != authorID {
-		return perrors.ErrNotAnAuthor
+		return errors2.ErrNotAnAuthor
 	}
 	for _, member := range post.Members {
 		if member.ID.Hex() == memberID {
-			return perrors.ErrMemberAlreadyExists
+			return errors2.ErrMemberAlreadyExists
 		}
 	}
 	deleted := false
-	var memberObj *users.User
+	var memberObj *User
 	for i, member := range post.MemberRequests {
 		if member.ID.Hex() == memberID {
 			memberObj = post.MemberRequests[i]
@@ -163,7 +161,7 @@ func ApproveMember(ctx context.Context, client *mongo.Client, postID string, aut
 		}
 	}
 	if !deleted {
-		return perrors.ErrMebmerNotExists
+		return errors2.ErrMebmerNotExists
 	}
 	post.Members = append(post.Members, memberObj)
 	_, err = coll.ReplaceOne(ctx, bson.D{
@@ -178,14 +176,14 @@ func ApproveMember(ctx context.Context, client *mongo.Client, postID string, aut
 	return nil
 }
 
-func DeleteMemberSelf(ctx context.Context, client *mongo.Client, postID string, userID string) error {
+func DeletePostMemberSelf(ctx context.Context, client *mongo.Client, postID string, userID string) error {
 	post, err := GetPost(ctx, client, postID)
 	if err != nil {
 		return err
 	}
 	postsColl := client.Database("codev").Collection("posts")
 	if post.Members == nil {
-		return perrors.ErrMebmerNotExists
+		return errors2.ErrMebmerNotExists
 	}
 	deleted := false
 	for i, member := range post.Members {
@@ -197,7 +195,7 @@ func DeleteMemberSelf(ctx context.Context, client *mongo.Client, postID string, 
 		}
 	}
 	if !deleted {
-		return perrors.ErrMebmerNotExists
+		return errors2.ErrMebmerNotExists
 	}
 	_, err = postsColl.ReplaceOne(ctx, bson.D{
 		{
@@ -212,17 +210,17 @@ func DeleteMemberSelf(ctx context.Context, client *mongo.Client, postID string, 
 	return nil
 }
 
-func DeleteMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
+func DeletePostMember(ctx context.Context, client *mongo.Client, postID string, authorID string, memberID string) error {
 	post, err := GetPost(ctx, client, postID)
 	if err != nil {
 		return err
 	}
 	if post.Author.ID.Hex() != authorID {
-		return perrors.ErrNotAnAuthor
+		return errors2.ErrNotAnAuthor
 	}
 	postsColl := client.Database("codev").Collection("posts")
 	if post.Members == nil {
-		return perrors.ErrMebmerNotExists
+		return errors2.ErrMebmerNotExists
 	}
 	deleted := false
 	for i, member := range post.Members {
@@ -234,7 +232,7 @@ func DeleteMember(ctx context.Context, client *mongo.Client, postID string, auth
 		}
 	}
 	if !deleted {
-		return perrors.ErrMebmerNotExists
+		return errors2.ErrMebmerNotExists
 	}
 	_, err = postsColl.ReplaceOne(ctx, bson.D{
 		{
@@ -249,7 +247,7 @@ func DeleteMember(ctx context.Context, client *mongo.Client, postID string, auth
 	return nil
 }
 
-func UploadImage(ctx context.Context, client *mongo.Client, reader io.Reader, post *Post) (*file, error) {
+func UploadPostImage(ctx context.Context, client *mongo.Client, reader io.Reader, post *Post) (*File, error) {
 	db := client.Database("codev")
 	bucket, err := gridfs.NewBucket(db)
 	if err != nil {
@@ -270,25 +268,5 @@ func UploadImage(ctx context.Context, client *mongo.Client, reader io.Reader, po
 	}
 	post.ImageID = &fileID
 
-	return &file{fileID}, nil
-}
-
-func DownloadImage(ctx context.Context, client *mongo.Client, id string, writer io.Writer) error {
-	db := client.Database("codev")
-	bucket, err := gridfs.NewBucket(db)
-	if err != nil {
-		return err
-	}
-	obj, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	_, err = bucket.DownloadToStream(obj, writer)
-	if err != nil {
-		if err == gridfs.ErrFileNotFound {
-			return perrors.ErrNoFile
-		}
-		return err
-	}
-	return nil
+	return &File{fileID}, nil
 }

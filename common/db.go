@@ -2,32 +2,24 @@ package common
 
 import (
 	"context"
+	"fmt"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func CheckExist(ctx context.Context, collection *mongo.Collection, key string, value interface{}) (bool, error) {
-	findRes := collection.FindOne(ctx, bson.D{
-		{
-			Key:   key,
-			Value: value,
-		},
-	})
-	err := findRes.Err()
-	if err == nil {
-		var test interface{}
-		err := findRes.Decode(&test)
-		if err == nil {
-			return true, nil
-		} else if err == mongo.ErrNoDocuments {
-			return false, nil
-		} else {
-			return false, err
-		}
-	} else if err == mongo.ErrNoDocuments {
-		return false, nil
-	} else {
-		return false, err
+func Connect() (*mongo.Client, error) {
+	dbOpts := options.Client().ApplyURI("mongodb://mongo:27017")
+	fmt.Println("Start connect")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client, conErr := mongo.Connect(ctx, dbOpts)
+
+	if conErr != nil {
+		fmt.Println(conErr)
+		return nil, conErr
 	}
+
+	return client, nil
 }

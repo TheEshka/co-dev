@@ -12,9 +12,10 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: '#/components/schemas/RegUserRequest'
+              $ref: '#/components/schemas/RegUser'
       responses:
         '201':
+          description: Ok
           headers:
             Authorization:
               schema:
@@ -22,7 +23,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegUserRequest'
+                $ref: '#/components/schemas/RegUser'
   /api/login:
     post:
       description: Login existing user
@@ -32,9 +33,10 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: '#/components/schemas/LoginUserRequest'
+              $ref: '#/components/schemas/LoginUser'
       responses:
         '200':
+          description: Ok
           headers:
             Authorization:
               schema:
@@ -42,7 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginUserRequest'
+                $ref: '#/components/schemas/LoginUser'
   /api/users/{id}:
     get:
       description: Get user info
@@ -55,15 +57,55 @@ paths:
             type: string
       responses:
         '200':
+          description: Ok
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: '#/components/schemas/User'
+  /api/users/:
+    put:
+      description: Fill user's info
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            $ref: '#/components/schemas/AuthorizationHeader'
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/UserInfo'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/User'
+  /api/users/{id}/image:
+    post:
+      description: Upload user's image
+      parameters:
+        - in: path
+          name: id
+          description: User's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
   /api/posts:
     post:
       description: Create new team
       parameters:
-        - in: headers
+        - in: header
           name: Authorization
           schema:
             $ref: '#/components/schemas/AuthorizationHeader'
@@ -74,23 +116,32 @@ paths:
         content:
           application/json:
             schema: 
-              $ref: '#/components/schemas/CreatePostRequest'
+              $ref: '#/components/schemas/CreatePost'
       responses:
         '201':
+          description: Ok
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Post'
     get:
       description: Get list of teams
-      requestBody:
-        desctiption: Offset and limit of list of teams
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GetPostsRequest'
+      parameters:
+        - in: query
+          name: limit
+          description: Posts' limit
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          description: Posts' offset
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
+          description: Ok
           content:
             application/json:
               schema:
@@ -107,15 +158,16 @@ paths:
             type: string
       responses:
         '200':
+          description: Ok
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostResponse'
+                $ref: '#/components/schemas/Post'
   /api/posts/{id}/members:
     post:
       description: Add self to member request
       parameters:
-        - in: headers
+        - in: header
           name: Authorization
           schema:
             $ref: '#/components/schemas/AuthorizationHeader'
@@ -129,16 +181,10 @@ paths:
       responses:
         '200':
           description: Ok
-        '409':
-          description: Author is not allowed to be a member of team
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
     delete:
       description: Delete self from team
       parameters:
-        - in: headers
+        - in: header
           name: Authorization
           schema:
             $ref: '#/components/schemas/AuthorizationHeader'
@@ -156,7 +202,7 @@ paths:
     put:
       description: Approve user with memberId to be a member of team with postId
       parameters:
-        - in: headers
+        - in: header
           name: Authorization
           schema:
             $ref: '#/components/schemas/AuthorizationHeader'
@@ -179,7 +225,7 @@ paths:
     delete:
       description: Delete user with memberId from team with postId by author
       parameters:
-        - in: headers
+        - in: header
           name: Authorization
           schema:
             $ref: '#/components/schemas/AuthorizationHeader'
@@ -229,26 +275,23 @@ paths:
             type: string
       responses:
         '200':
+          description: Ok
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileResponse'
+                $ref: '#/components/schemas/File'
 
 components:
   schemas:
-    FileResponse:
+    File:
       type: object
       required:
         - id
       properties:
         id:
           type: string
-    RegUserRequest:
+    RegUser:
       type: object
-      required:
-        - email
-        - password
-        - name
       properties:
         email:
           type: string
@@ -258,11 +301,8 @@ components:
         password:
           type: string
           format: password
-    LoginUserRequest:
+    LoginUser:
       type: object
-      required:
-        - email
-        - password
       properties:
         email:
           type: string
@@ -270,7 +310,7 @@ components:
         password:
           type: string
           format: password
-    UserResponse:
+    User:
       type: object
       required:
         - id
@@ -284,12 +324,28 @@ components:
           format: email
         name:
           type: string
-    CreatePostRequest:
+        info:
+          $ref: '#/components/schemas/UserInfo'
+    UserInfo:
       type: object
-      required:
-        - title
-        - subject
-        - description
+      properties:
+        image:
+          type: string
+        city:
+          type: string
+        githubLink:
+          type: string
+        aboutMe:
+          type: string
+        authorPosts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        memberPosts:
+          items:
+            $ref: '#/components/schemas/Post'
+    CreatePost:
+      type: object
       properties:
         title:
           type: string
@@ -297,22 +353,8 @@ components:
           type: string
         description:
           type: string
-    GetPostsRequest:
-      type: object
-      properties:
-        offset:
-          type: integer
-        limit:
-          type: integer
     Post:
       type: object
-      required:
-        - id 
-        - title
-        - subject
-        - description
-        - authorID
-        - createdAt
       properties:
         id:
           type: string
@@ -322,49 +364,24 @@ components:
           type: string
         description:
           type: string
-        authorID:
-          type: string
-        createdAt:
-          type: string
-          format: time
-    PostResponse:
-      type: object
-      required:
-        - id 
-        - title
-        - subject
-        - description
-        - authorID
-        - createdAt
-        - imageId
-      properties:
-        id:
-          type: string
-        title:
-          type: string
-        imageId:
-          type: string
-        subject:
-          type: string
-        description:
-          type: string
-        authorID:
-          type: string
+        author:
+          $ref: '#/components/schemas/User'
+        membersRequest:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
         createdAt:
           type: string
           format: time
     Posts:
       type: array
       items:
-        $ref: '#/components/schemas/PostResponse'
+        $ref: '#/components/schemas/Post'
     AuthorizationHeader:
       type: string
       pattern: '^Bearer .+$'
-    Error:
-      type: object
-      required:
-        - error
-      properties:
-        error:
-          type: string
 

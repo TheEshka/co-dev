@@ -1,34 +1,35 @@
 package main
 
 import (
+	"github.com/misgorod/co-dev/common"
+	"github.com/misgorod/co-dev/handlers"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/misgorod/co-dev/auth"
-	"github.com/misgorod/co-dev/db"
 	"github.com/misgorod/co-dev/middlewares"
-	"github.com/misgorod/co-dev/post"
-	"github.com/misgorod/co-dev/users"
 	"gopkg.in/go-playground/validator.v9"
 )
 
 func main() {
-	client, err := db.Connect()
+	client, err := common.Connect()
 	if err != nil {
 		panic(err)
 	}
-	authHandler := auth.Handler{
+	authHandler := handlers.AuthHandler{
 		Client:   client,
 		Validate: validator.New(),
 	}
-	postHandler := post.Handler{
+	postHandler := handlers.PostsHandler{
 		Client:   client,
 		Validate: validator.New(),
 	}
-	usersHandler := users.Handler{
+	usersHandler := handlers.UsersHandler{
 		Client: client,
+	}
+	imagesHandler := handlers.ImagesHandler{
+		Client:   client,
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)
@@ -39,6 +40,8 @@ func main() {
 		r.Route("/users", func(r chi.Router) {
 			r.Use(middlewares.Authenticate)
 			r.Get("/{id}", usersHandler.Get)
+			r.Put("/", usersHandler.Put)
+			r.Post("/{id}/image", usersHandler.PostImage)
 		})
 
 		r.Route("/posts", func(r chi.Router) {
@@ -65,7 +68,7 @@ func main() {
 			})
 		})
 
-		r.Get("/image/{id}", postHandler.GetImage)
+		r.Get("/image/{id}", imagesHandler.GetImage)
 	})
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -1,40 +1,38 @@
-package auth
+package models
 
 import (
 	"context"
+	errors2 "github.com/misgorod/co-dev/errors"
 
-	"github.com/misgorod/co-dev/common"
-	"github.com/misgorod/co-dev/common/errors"
-	aerrors "github.com/misgorod/co-dev/auth/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type regUser struct {
+type RegUser struct {
 	ID       primitive.ObjectID `json:"id" bson:"_id,omitempty" validate:"-"`
 	Name     string             `json:"name" bson:"name" validate:"required"`
 	Email    string             `json:"email" bson:"email" validate:"required,email"`
 	Password string             `json:"password,omitempty" bson:"password" validate:"required"`
 }
 
-type loginUser struct {
+type LoginUser struct {
 	ID       primitive.ObjectID `json:"id" bson:"_id" validate:"-"`
 	Name     string             `json:"name" bson:"name"`
 	Email    string             `json:"email" bson:"email" validate:"required,email"`
 	Password string             `json:"password,omitempty" bson:"password" validate:"required"`
 }
 
-func createUser(ctx context.Context, client *mongo.Client, user *regUser) error {
+func CreateUser(ctx context.Context, client *mongo.Client, user *RegUser) error {
 	col := client.Database("codev").Collection("users")
 
-	ok, err := common.CheckExist(ctx, col, "email", user.Email)
+	ok, err := CheckExist(ctx, col, "email", user.Email)
 	if err != nil {
 		return err
 	}
 	if ok {
-		return aerrors.ErrUserExists
+		return errors2.ErrUserExists
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -49,7 +47,7 @@ func createUser(ctx context.Context, client *mongo.Client, user *regUser) error 
 	}
 	id, ok := insertRes.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return errors.ErrAssertID
+		return errors2.ErrAssertID
 	}
 	user.ID = id
 	user.Password = ""
@@ -57,7 +55,7 @@ func createUser(ctx context.Context, client *mongo.Client, user *regUser) error 
 	return nil
 }
 
-func validateUser(ctx context.Context, client *mongo.Client, user *loginUser) error {
+func ValidateUser(ctx context.Context, client *mongo.Client, user *LoginUser) error {
 	col := client.Database("codev").Collection("users")
 	findRes := col.FindOne(ctx, bson.D{
 		{
@@ -65,18 +63,18 @@ func validateUser(ctx context.Context, client *mongo.Client, user *loginUser) er
 			Value: user.Email,
 		},
 	})
-	var dbUser loginUser
+	var dbUser LoginUser
 	err := findRes.Decode(&dbUser)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return aerrors.ErrWrongCreds
+			return errors2.ErrWrongCreds
 		}
 		return err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return aerrors.ErrWrongCreds
+			return errors2.ErrWrongCreds
 		}
 		return err
 	}
