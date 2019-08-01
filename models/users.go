@@ -2,13 +2,19 @@ package models
 
 import (
 	"context"
-	errors2 "github.com/misgorod/co-dev/errors"
+	"github.com/misgorod/co-dev/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"io"
 )
+
+type UserBase struct {
+	ID    primitive.ObjectID `json:"id" bson:"_id"`
+	Name  string             `json:"name,omitempty" bson:"name,omitempty"`
+	Email string             `json:"email" bson:"email"`
+}
 
 type User struct {
 	ID    primitive.ObjectID `json:"id" bson:"_id"`
@@ -18,12 +24,12 @@ type User struct {
 }
 
 type UserInfo struct {
-	ImageID *primitive.ObjectID `json:"image,omitempty" bson:"image,omitempty"`
-	City string                 `json:"city" bson:"city"`
-	GithubLink string           `json:"githubLink" bson:"githubLink"`
-	AboutMe string              `json:"aboutMe" bson:"aboutMe"`
-	AuthorPosts []*Post         `json:"authorPosts" bson:"authorPosts"`
-	MemberPosts []*Post         `json:"memberPosts" bson:"memberPosts"`
+	ImageID     *primitive.ObjectID `json:"image,omitempty" bson:"image,omitempty"`
+	City        string              `json:"city" bson:"city"`
+	GithubLink  string              `json:"githubLink" bson:"githubLink"`
+	AboutMe     string              `json:"aboutMe" bson:"aboutMe"`
+	AuthorPosts []*Post             `json:"authorPosts" bson:"authorPosts"`
+	MemberPosts []*Post             `json:"memberPosts" bson:"memberPosts"`
 }
 
 func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error) {
@@ -31,7 +37,7 @@ func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error
 	posts := client.Database("codev").Collection("posts")
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, errors2.ErrUserNotExists
+		return nil, errors.ErrUserNotExists
 	}
 	singleRes := users.FindOne(ctx, bson.D{
 		{
@@ -43,7 +49,7 @@ func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error
 	err = singleRes.Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, errors2.ErrUserNotExists
+			return nil, errors.ErrUserNotExists
 		}
 		return nil, err
 	}
@@ -81,6 +87,29 @@ func GetUser(ctx context.Context, client *mongo.Client, id string) (*User, error
 	return &user, nil
 }
 
+func GetUserBase(ctx context.Context, client *mongo.Client, id string) (*UserBase, error) {
+	users := client.Database("codev").Collection("users")
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.ErrUserNotExists
+	}
+	singleRes := users.FindOne(ctx, bson.D{
+		{
+			Key:   "_id",
+			Value: objID,
+		},
+	})
+	var user UserBase
+	err = singleRes.Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.ErrUserNotExists
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func PutUser(ctx context.Context, client *mongo.Client, userID string, info *UserInfo) (*User, error) {
 	coll := client.Database("codev").Collection("users")
 	user, err := GetUser(ctx, client, userID)
@@ -96,11 +125,14 @@ func PutUser(ctx context.Context, client *mongo.Client, userID string, info *Use
 	if info.GithubLink != "" {
 		user.Info.GithubLink = info.GithubLink
 	}
-	filter := bson.D{{"_id", userID}}
+	filter := bson.D{{"_id", user.ID}}
 	update := bson.D{{"$set", bson.D{{"info", user.Info}}}}
-	_, err = coll.UpdateOne(ctx, filter, update)
+	updateRes, err := coll.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
+	}
+	if updateRes.MatchedCount == 0 {
+		return nil, errors.ErrUserNotFound
 	}
 	return user, nil
 }

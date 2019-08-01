@@ -29,7 +29,7 @@ func main() {
 		Client: client,
 	}
 	imagesHandler := handlers.ImagesHandler{
-		Client:   client,
+		Client: client,
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)

@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"github.com/misgorod/co-dev/errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +12,7 @@ type File struct {
 	ID primitive.ObjectID `json:"id"`
 }
 
-func DownloadFile(ctx context.Context, client *mongo.Client, id string, writer io.Writer) error {
+func DownloadFile(client *mongo.Client, id string, writer io.Writer) error {
 	db := client.Database("codev")
 	bucket, err := gridfs.NewBucket(db)
 	if err != nil {

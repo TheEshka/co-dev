@@ -2,9 +2,10 @@ package models
 
 import (
 	"context"
-	errors2 "github.com/misgorod/co-dev/errors"
 	"io"
 	"time"
+
+	errors2 "github.com/misgorod/co-dev/errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,17 +19,17 @@ type Post struct {
 	Title          string              `json:"title" bson:"title" validate:"required,gte=5"`
 	Subject        string              `json:"subject" bson:"subject" validate:"required,gte=5"`
 	Description    string              `json:"description" bson:"description" validate:"required,gte=5"`
-	Author         *User               `json:"author" bson:"author"`
+	Author         *UserBase           `json:"author" bson:"author"`
 	ImageID        *primitive.ObjectID `json:"image,omitempty" bson:"image,omitempty"`
 	CreatedAt      time.Time           `json:"createdAt" bson:"createdAt"`
 	Views          int                 `json:"views,omitempty" bson:"views,omitempty"`
-	MemberRequests []*User             `json:"membersRequest,omitempty" bson:"membersRequest,omitempty"`
-	Members        []*User             `json:"members,omitempty" bson:"members,omitempty"`
+	MemberRequests []*UserBase         `json:"membersRequest,omitempty" bson:"membersRequest,omitempty"`
+	Members        []*UserBase         `json:"members,omitempty" bson:"members,omitempty"`
 }
 
 func CreatePost(ctx context.Context, client *mongo.Client, authorID string, post *Post) (*Post, error) {
 	coll := client.Database("codev").Collection("posts")
-	author, err := GetUser(ctx, client, authorID)
+	author, err := GetUserBase(ctx, client, authorID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func AddPostMember(ctx context.Context, client *mongo.Client, postID string, use
 	if err != nil {
 		return err
 	}
-	userObj, err := GetUser(ctx, client, userID)
+	userObj, err := GetUserBase(ctx, client, userID)
 	if err != nil {
 		return errors2.ErrWrongToken
 	}
@@ -108,7 +109,7 @@ func AddPostMember(ctx context.Context, client *mongo.Client, postID string, use
 	}
 	postsColl := client.Database("codev").Collection("posts")
 	if post.MemberRequests == nil {
-		post.MemberRequests = make([]*User, 0)
+		post.MemberRequests = make([]*UserBase, 0)
 	} else {
 		for _, member := range post.MemberRequests {
 			if member.ID.Hex() == userObj.ID.Hex() {
@@ -150,7 +151,7 @@ func ApprovePostMember(ctx context.Context, client *mongo.Client, postID string,
 		}
 	}
 	deleted := false
-	var memberObj *User
+	var memberObj *UserBase
 	for i, member := range post.MemberRequests {
 		if member.ID.Hex() == memberID {
 			memberObj = post.MemberRequests[i]

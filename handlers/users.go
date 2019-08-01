@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/misgorod/co-dev/auth"
 	"github.com/misgorod/co-dev/common"
-	errors2 "github.com/misgorod/co-dev/errors"
+	"github.com/misgorod/co-dev/errors"
 	"github.com/misgorod/co-dev/models"
 	"net/http"
 
@@ -19,7 +19,7 @@ type UsersHandler struct {
 func (u *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		common.RespondError(w, errors2.ErrNoID)
+		common.RespondError(w, errors.ErrNoID)
 		return
 	}
 
@@ -35,12 +35,12 @@ func (u *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 func (u *UsersHandler) Put(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
-		common.RespondError(w, errors2.ErrWrongToken)
+		common.RespondError(w, errors.ErrWrongToken)
 		return
 	}
 	var info models.UserInfo
 	if err := json.NewDecoder(r.Body).Decode(&info); err != nil {
-		common.RespondError(w, errors2.ErrDecodeRequest)
+		common.RespondError(w, errors.ErrDecodeRequest)
 		return
 	}
 	user, err := models.PutUser(r.Context(), u.Client, userID, &info)
@@ -55,7 +55,7 @@ func (u *UsersHandler) Put(w http.ResponseWriter, r *http.Request) {
 func (u *UsersHandler) PostImage(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r.Context())
 	if !ok {
-		common.RespondError(w, errors2.ErrWrongToken)
+		common.RespondError(w, errors.ErrWrongToken)
 		return
 	}
 	user, err := models.GetUser(r.Context(), u.Client, userID)
@@ -63,11 +63,15 @@ func (u *UsersHandler) PostImage(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, err)
 		return
 	}
-	r.ParseMultipartForm(16 << 20)
+	err = r.ParseMultipartForm(16 << 20)
+	if err != nil {
+		common.RespondError(w, err)
+		return
+	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		if err == http.ErrMissingFile {
-			common.RespondError(w, errors2.ErrNoFileKey)
+			common.RespondError(w, errors.ErrNoFileKey)
 		}
 		common.RespondError(w, err)
 		return

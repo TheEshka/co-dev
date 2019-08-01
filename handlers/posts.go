@@ -46,7 +46,7 @@ func (p *PostsHandler) Post(w http.ResponseWriter, r *http.Request) {
 func (p *PostsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	slimit := r.URL.Query().Get("limit")
 	if slimit == "" {
-		slimit = "10"	
+		slimit = "10"
 	}
 	limit, err := strconv.Atoi(slimit)
 	if err != nil {
@@ -54,7 +54,7 @@ func (p *PostsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 	soffset := r.URL.Query().Get("offset")
 	if soffset == "" {
-	    soffset = "0"    
+		soffset = "0"
 	}
 	offset, err := strconv.Atoi(soffset)
 	if err != nil {
@@ -184,7 +184,11 @@ func (p *PostsHandler) PostImage(w http.ResponseWriter, r *http.Request) {
 		common.RespondError(w, errors2.ErrNotAnAuthor)
 		return
 	}
-	r.ParseMultipartForm(16 << 20)
+	err = r.ParseMultipartForm(16 << 20)
+	if err != nil {
+		common.RespondError(w, err)
+		return
+	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		if err == http.ErrMissingFile {
@@ -201,5 +205,3 @@ func (p *PostsHandler) PostImage(w http.ResponseWriter, r *http.Request) {
 	}
 	common.RespondJSON(w, 201, fileObj)
 }
-
-

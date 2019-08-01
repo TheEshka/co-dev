@@ -7,4 +7,3 @@ var ErrMebmerNotExists = New("member not exists", 404)
 var ErrMemberIsAuthor = New("member is not allowed to be an author of post", 400)
 var ErrMemberAlreadyExists = New("member already exists", 400)
 var ErrNotAnAuthor = New("user is not an author of post", 403)
-

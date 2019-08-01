@@ -62,7 +62,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /api/users/:
+  /api/users:
     put:
       description: Fill user's info
       parameters:
@@ -163,6 +163,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Post'
+  /api/posts/{id}/image:
+    post:
+      description: Upload image to team
+      parameters:
+        - in: path
+          name: id
+          description: Team's id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
   /api/posts/{id}/members:
     post:
       description: Add self to member request
@@ -263,23 +280,6 @@ paths:
               schema:
                 type: string
                 format: binary
-  /api/posts/{id}/image:
-    post:
-      description: Upload image to team
-      parameters:
-        - in: path
-          name: id
-          description: Team's id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/File'
 
 components:
   schemas:
@@ -310,6 +310,20 @@ components:
         password:
           type: string
           format: password
+    UserBase:
+      type: object
+      required:
+        - id
+        - email
+        - name
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
     User:
       type: object
       required:
@@ -365,15 +379,15 @@ components:
         description:
           type: string
         author:
-          $ref: '#/components/schemas/User'
+          $ref: '#/components/schemas/UserBase'
         membersRequest:
           type: array
           items:
-            $ref: '#/components/schemas/User'
+            $ref: '#/components/schemas/UserBase'
         members:
           type: array
           items:
-            $ref: '#/components/schemas/User'
+            $ref: '#/components/schemas/UserBase'
         createdAt:
           type: string
           format: time
