@@ -1,6 +1,6 @@
 [
   {
-    "name": "codev-docker",
+    "name": "codev",
     "imageUri": "misgorod/codev:latest"
   }
 ]
